@@ -29,7 +29,9 @@ export default async ({ req, res, log }) => {
   });
 
   res.status = proxied.status;
-  proxied.headers.forEach((v, k) => res.setHeader(k, v));
+  for (const [key, value] of proxied.headers.entries()) {
+    res.headers[key] = value;
+  }
   if (proxied.body) for await (const chunk of proxied.body) res.write(chunk);
   res.end();
 };
