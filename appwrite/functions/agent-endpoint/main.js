@@ -29,6 +29,7 @@ export default async ({ req, res, log }) => {
   });
 
   res.status = proxied.status;
+  console.log("proxied.headers", proxied.headers);
   res.headers = {}; // Initialize headers object
   for (const [key, value] of proxied.headers.entries()) {
     res.headers[key] = value;
@@ -37,6 +38,15 @@ export default async ({ req, res, log }) => {
   res.headers["access-control-allow-origin"] = "*";
   res.headers["access-control-allow-methods"] = "GET, POST, PUT, DELETE, OPTIONS";
   res.headers["access-control-allow-headers"] = "Content-Type, Authorization";
-  if (proxied.body) for await (const chunk of proxied.body) res.write(chunk);
-  res.end();
+
+  // Handle response body
+  if (proxied.body) {
+    const chunks = [];
+    for await (const chunk of proxied.body) {
+      chunks.push(chunk);
+    }
+    res.send(Buffer.concat(chunks));
+  } else {
+    res.send("");
+  }
 };
