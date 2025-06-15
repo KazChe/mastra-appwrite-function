@@ -1,6 +1,6 @@
 // appwrite/functions/agent-endpoint/index.js
 import { Client, Users } from 'node-appwrite';
-import { app } from '../../.mastra/output/index.mjs'; // ESM import is fine
+import { app } from './.output/index.mjs'; // ESM import is fine
 
 export default async ({ req, res, log, error }) => {
   // --- (optional) example call to Appwrite Users service -------------
