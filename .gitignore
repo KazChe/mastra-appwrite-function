@@ -20,6 +20,12 @@ build/
 *.log
 npm-debug.log*
 
-# Project specific
-my-mastra-app/
-appwrite/ 
+output.txt
+.mastra
+.env.development
+*.db
+*.db-*
+
+# Mastra + Function build output
+.mastra/
+appwrite/functions/agent-endpoint/.output/
