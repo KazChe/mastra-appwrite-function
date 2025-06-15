@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "format": "prettier --write .",
-    "build:mastra": "npx mastra build",
+    "build:mastra": "npx mastra build --verbose",
     "build:function": "npm run build:mastra && cp -R .mastra/output appwrite/functions/agent-endpoint/.output"
   },
   "dependencies": {
