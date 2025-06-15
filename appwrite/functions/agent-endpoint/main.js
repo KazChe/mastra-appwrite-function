@@ -1,11 +1,12 @@
 console.log("🟢 wrapper cold-start");
 
-import "./.output/index.mjs"; // starts Hono on :4111
+// start Hono on :4111
+import "./.output/index.mjs";
 
-// ── wait ≤3 s for localhost:4111 to come up ───────────────
-async function waitForServer() {
-  const deadline = Date.now() + 3000;
-  while (Date.now() < deadline) {
+// wait ≤3 s for Mastra server
+const waitForServer = async () => {
+  const end = Date.now() + 3000;
+  while (Date.now() < end) {
     try {
       const r = await fetch("http://127.0.0.1:4111/health");
       if (r.ok) return;
@@ -14,16 +15,16 @@ async function waitForServer() {
     }
     await new Promise((r) => setTimeout(r, 150));
   }
-  throw new Error("Mastra server did not start in time");
-}
+  throw new Error("Mastra server did not start");
+};
 
-// unified header helper
-function addHeader(res, k, v) {
+// add header helper (works on every Appwrite runtime)
+const add = (res, k, v) => {
   if (typeof res.setHeader === "function") res.setHeader(k, v);
   else {
     (res.headers ??= {})[k] = v;
   }
-}
+};
 
 export default async ({ req, res, log }) => {
   await waitForServer();
@@ -35,20 +36,24 @@ export default async ({ req, res, log }) => {
   });
 
   res.status = upstream.status;
-  upstream.headers.forEach((v, k) => addHeader(res, k, v));
+  upstream.headers.forEach((v, k) => add(res, k, v));
 
-  // CORS
-  addHeader(res, "access-control-allow-origin", "*");
-  addHeader(res, "access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
-  addHeader(res, "access-control-allow-headers", "Content-Type, Authorization");
+  // CORS for browsers
+  add(res, "access-control-allow-origin", "*");
+  add(res, "access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
+  add(res, "access-control-allow-headers", "Content-Type, Authorization");
 
-  // ── body handling: stream if we can, else buffer ─────────
-  if (typeof res.write === "function" && upstream.body) {
+  /* ---------- body relay ---------- */
+  if (upstream.body && typeof res.write === "function") {
+    // stream when possible
     for await (const chunk of upstream.body) res.write(chunk);
-    return res.end();
+    res.end();
+  } else {
+    // fallback: buffer then send
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
   }
 
-  // fallback: buffer then send
-  const chunks = upstream.body ? Array.from(await upstream.arrayBuffer()) : [];
-  return res.send(Buffer.from(chunks));
+  // optional debug – remove later
+  log("🔸 proxied", { status: upstream.status, bytes: res.headers?.["content-length"] });
 };
