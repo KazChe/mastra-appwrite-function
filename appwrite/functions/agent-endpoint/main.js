@@ -1,31 +1,20 @@
 // appwrite/functions/agent-endpoint/main.js
-import * as mod from "./.output/index.mjs"; // import the module object
+console.log("🟢 wrapper cold-start");
 
-// Resolve the Hono app whichever way it was exported
-const honoApp =
-  mod.app ??
-  mod.default ??
-  mod;
+// Side-effect: importing spins up Mastra on localhost:4111
+import "./.output/index.mjs";
 
 export default async ({ req, res }) => {
-  const honoReq = new Request(req.url, {
+  // Forward the HTTP call to Mastra’s internal listener
+  const proxied = await fetch(`http://127.0.0.1:4111${req.path || "/"}`, {
     method: req.method,
     headers: req.headers,
     body: req.bodyRaw ?? undefined,
   });
 
-  const honoRes = await honoApp.fetch(honoReq); // works for all three cases
+  res.status = proxied.status;
+  proxied.headers.forEach((v, k) => res.setHeader(k, v));
 
-  res.status = honoRes.status;
-  honoRes.headers.forEach((v, k) => res.setHeader(k, v));
-
-  if (honoRes.body) {
-    const reader = honoRes.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      res.write(value); // supports streaming tokens
-    }
-  }
-  return res.end();
+  if (proxied.body) for await (const chunk of proxied.body) res.write(chunk);
+  res.end();
 };
