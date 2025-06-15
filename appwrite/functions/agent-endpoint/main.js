@@ -1,27 +1,20 @@
-// appwrite/functions/agent-endpoint/index.js
-import { Client, Users } from 'node-appwrite';
-import honoApp from './.output/index.mjs'; // ESM import is fine
+// appwrite/functions/agent-endpoint/main.js
+import * as mod from "./.output/index.mjs"; // import the module object
 
-export default async ({ req, res, log, error }) => {
-  // --- (optional) example call to Appwrite Users service -------------
-  const client = new Client()
-    .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
-    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-    .setKey(req.headers['x-appwrite-key'] ?? '');
-  const users = new Users(client);
-  try {
-    log(`Total users: ${(await users.list()).total}`);
-  } catch (err) {
-    error(`Could not list users: ${err.message}`);
-  }
+// Resolve the Hono app whichever way it was exported
+const honoApp =
+  mod.app ??
+  mod.default ??
+  mod;
 
-  // --- pass the request straight to the Mastra (Hono) server ----------
+export default async ({ req, res }) => {
   const honoReq = new Request(req.url, {
     method: req.method,
     headers: req.headers,
     body: req.bodyRaw ?? undefined,
   });
-  const honoRes = await honoApp.fetch(honoReq);
+
+  const honoRes = await honoApp.fetch(honoReq); // works for all three cases
 
   res.status = honoRes.status;
   honoRes.headers.forEach((v, k) => res.setHeader(k, v));
@@ -31,8 +24,8 @@ export default async ({ req, res, log, error }) => {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      res.write(value); // supports streaming
+      res.write(value); // supports streaming tokens
     }
   }
-  return res.end(); // always return
+  return res.end();
 };
