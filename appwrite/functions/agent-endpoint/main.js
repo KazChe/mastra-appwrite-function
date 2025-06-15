@@ -23,7 +23,16 @@ export default async ({ req, res, log }) => {
   const upstream = await fetch("http://127.0.0.1:4111/api/agents/weatherAgent/generate", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ message: "What’s the weather?" }), // fixed test prompt
+    body:
+      req.bodyRaw ??
+      JSON.stringify({
+        messages: [
+          {
+            role: "user",
+            content: "What's the weather?",
+          },
+        ],
+      }),
   });
 
   const text = await upstream.text(); // ALWAYS read it as text
