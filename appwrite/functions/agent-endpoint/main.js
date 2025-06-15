@@ -1,10 +1,9 @@
 console.log("🟢 wrapper cold-start");
 
-// starts Hono on 4111
-import "./.output/index.mjs";
+import "./.output/index.mjs"; // starts Hono on :4111
 
-// wait ≤3 s for server
-const waitForServer = async () => {
+// ── wait ≤3 s for localhost:4111 to come up ───────────────
+async function waitForServer() {
   const deadline = Date.now() + 3000;
   while (Date.now() < deadline) {
     try {
@@ -16,15 +15,15 @@ const waitForServer = async () => {
     await new Promise((r) => setTimeout(r, 150));
   }
   throw new Error("Mastra server did not start in time");
-};
+}
 
-const addHeader = (res, k, v) => {
+// unified header helper
+function addHeader(res, k, v) {
   if (typeof res.setHeader === "function") res.setHeader(k, v);
   else {
-    if (!res.headers) res.headers = {};
-    res.headers[k] = v;
+    (res.headers ??= {})[k] = v;
   }
-};
+}
 
 export default async ({ req, res, log }) => {
   await waitForServer();
@@ -43,9 +42,13 @@ export default async ({ req, res, log }) => {
   addHeader(res, "access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
   addHeader(res, "access-control-allow-headers", "Content-Type, Authorization");
 
-  if (upstream.body) {
+  // ── body handling: stream if we can, else buffer ─────────
+  if (typeof res.write === "function" && upstream.body) {
     for await (const chunk of upstream.body) res.write(chunk);
+    return res.end();
   }
-  res.end();
-  log("proxied OK", { status: upstream.status });
+
+  // fallback: buffer then send
+  const chunks = upstream.body ? Array.from(await upstream.arrayBuffer()) : [];
+  return res.send(Buffer.from(chunks));
 };
