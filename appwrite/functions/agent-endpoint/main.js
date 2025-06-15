@@ -1,6 +1,6 @@
 // appwrite/functions/agent-endpoint/index.js
 import { Client, Users } from 'node-appwrite';
-import { app } from './.output/index.mjs'; // ESM import is fine
+import honoApp from './.output/index.mjs'; // ESM import is fine
 
 export default async ({ req, res, log, error }) => {
   // --- (optional) example call to Appwrite Users service -------------
@@ -21,7 +21,7 @@ export default async ({ req, res, log, error }) => {
     headers: req.headers,
     body: req.bodyRaw ?? undefined,
   });
-  const honoRes = await app.fetch(honoReq);
+  const honoRes = await honoApp.fetch(honoReq);
 
   res.status = honoRes.status;
   honoRes.headers.forEach((v, k) => res.setHeader(k, v));
