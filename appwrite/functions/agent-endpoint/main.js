@@ -45,8 +45,8 @@ export default async ({ req, res, log }) => {
     for await (const chunk of proxied.body) {
       chunks.push(chunk);
     }
-    res.send(Buffer.concat(chunks));
+    return res.send(Buffer.concat(chunks));
   } else {
-    res.send("");
+    return res.send("untonium");
   }
 };
