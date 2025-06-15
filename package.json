@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build:mastra": "npx --yes mastra build -r my-mastra-app",
-    "build:function": "npm run build:mastra && rm -rf appwrite/functions/agent-endpoint/.output && mkdir -p appwrite/functions/agent-endpoint/.output && cp my-mastra-app/.mastra/output/*.mjs appwrite/functions/agent-endpoint/.output/"
+    "build:function": "npm run build:mastra && rm -rf appwrite/functions/agent-endpoint/.output && mkdir -p appwrite/functions/agent-endpoint/.output && cp my-mastra-app/.mastra/output/*.mjs appwrite/functions/agent-endpoint/.output/ && cp -R my-mastra-app/.mastra/output/tools appwrite/functions/agent-endpoint/.output/"
   },
   "dependencies": {
     "node-appwrite": "^12.0.1",
