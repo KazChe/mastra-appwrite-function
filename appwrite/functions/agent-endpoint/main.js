@@ -19,134 +19,62 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 export default async ({ req, res, log }, context) => {
   await waitForMastra();
 
-  log("=== DEBUGGING REQUEST ===");
-  log("req.variables:", req.variables);
-  log("req.body:", req.body);
-  log("req.bodyText:", req.bodyText);
-  log("req.headers:", req.headers);
-  log("req.method:", req.method);
+  log("=== COMPLETE REQUEST DEBUG ===");
 
-  // Add more debug info
-  log("typeof req.body:", typeof req.body);
-  log("req.body length:", req.body?.length || 0);
+  // Log everything possible
+  log("typeof req:", typeof req);
+  log("req keys:", Object.keys(req || {}));
 
-  // Check for bodyJson with error handling
-  let bodyJson = null;
-  try {
-    bodyJson = req.bodyJson;
-    log("req.bodyJson:", bodyJson);
-  } catch (e) {
-    log("req.bodyJson error:", e.message);
-  }
+  // Check all possible properties
+  const reqProps = [
+    "variables",
+    "body",
+    "bodyText",
+    "bodyJson",
+    "bodyRaw",
+    "bodyBinary",
+    "payload",
+    "data",
+    "query",
+    "params",
+    "headers",
+    "method",
+    "url",
+  ];
 
-  // 1) Get the raw JSON body from the correct source
-  let raw = "";
-  let dataSource = "none";
-
-  // Check if called via executions API (data in req.variables.data)
-  if (req.variables && req.variables.data) {
-    raw = req.variables.data;
-    dataSource = "req.variables.data";
-    log("🔸 Got data from req.variables.data:", raw);
-  }
-  // Check bodyJson first (most reliable for JSON)
-  else if (bodyJson && typeof bodyJson === "object") {
-    raw = JSON.stringify(bodyJson);
-    dataSource = "req.bodyJson";
-    log("🔸 Got data from req.bodyJson:", raw);
-  }
-  // Check if called via direct HTTP (data in req.bodyText or req.body)
-  else if (req.bodyText && req.bodyText.trim()) {
-    raw = req.bodyText.trim();
-    dataSource = "req.bodyText";
-    log("🔸 Got data from req.bodyText:", raw);
-  } else if (req.body && req.body.trim && req.body.trim()) {
-    raw = req.body.trim();
-    dataSource = "req.body";
-    log("🔸 Got data from req.body:", raw);
-  } else {
-    log("❌ No request data found in any source");
-    log("❌ Available data:", {
-      variables: req.variables,
-      body: req.body,
-      bodyText: req.bodyText,
-      bodyJson: bodyJson,
-      headers: req.headers,
-    });
-
-    // Return debug info instead of error for now
-    return res.json({
-      error: "No request data found",
-      debug: {
-        variables: req.variables,
-        body: req.body,
-        bodyText: req.bodyText,
-        bodyJson: bodyJson,
-        headers: req.headers,
-        method: req.method,
-      },
-    });
-  }
-
-  log(`🔸 Data source: ${dataSource}`);
-
-  // 2) Validate
-  let incoming;
-  try {
-    incoming = typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch (parseError) {
-    log("❌ JSON parse error:", parseError.message);
-    log("❌ Raw data was:", raw);
-    log("❌ Data source was:", dataSource);
-    return res.json({
-      error: "Invalid JSON",
-      details: parseError.message,
-      rawData: raw,
-      dataSource: dataSource,
-    });
-  }
-
-  if (!incoming || !Array.isArray(incoming.messages)) {
-    log("❌ Invalid messages format:", incoming);
-    return res.json({
-      error: "Expected { messages: [...] }",
-      received: incoming,
-      dataSource: dataSource,
-    });
-  }
-
-  // 3) Forward it
-  const body = JSON.stringify(incoming);
-  log("🔸 wrapper sending body", body);
-
-  try {
-    const upstream = await fetch("http://127.0.0.1:4111/api/agents/weatherAgent/generate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-    });
-
-    // 4) Log & relay
-    const text = await upstream.clone().text();
-    log("🔸 upstream raw", text);
-
-    res.status = upstream.status;
-    upstream.headers.forEach((v, k) => addHeader(res, k, v));
-    addHeader(res, "access-control-allow-origin", "*");
-
-    if (upstream.body && typeof res.write === "function") {
-      for await (const chunk of upstream.body) res.write(chunk);
-      res.end();
-      return res;
+  reqProps.forEach((prop) => {
+    if (req.hasOwnProperty(prop)) {
+      log(`req.${prop}:`, req[prop]);
+    } else {
+      log(`req.${prop}: [UNDEFINED]`);
     }
+  });
 
-    res.send(Buffer.from(text));
-    return res;
-  } catch (fetchError) {
-    log("❌ Upstream fetch error:", fetchError.message);
-    return res.json({
-      error: "Upstream service error",
-      details: fetchError.message,
-    });
+  // Check context
+  log("typeof context:", typeof context);
+  log("context keys:", Object.keys(context || {}));
+  log("context:", context);
+
+  // Try to access data through context
+  if (context && context.req) {
+    log("context.req:", context.req);
   }
+
+  // Check for any data property
+  if (req.data) {
+    log("Found req.data:", req.data);
+  }
+
+  // Check entire req object structure
+  log("Full req object:", JSON.stringify(req, null, 2));
+
+  return res.json({
+    debug: "Check logs for complete request inspection",
+    reqKeys: Object.keys(req || {}),
+    contextKeys: Object.keys(context || {}),
+    hasVariables: !!req.variables,
+    hasBody: !!req.body,
+    hasBodyText: !!req.bodyText,
+    hasData: !!req.data,
+  });
 };
