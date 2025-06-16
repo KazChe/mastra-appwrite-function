@@ -18,6 +18,19 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 
 export default async ({ req, res, log }) => {
   await waitForMastra();
+  // Debug dump of the incoming request
+  const debugReq = {
+    bodyRaw: req.bodyRaw,
+    payload: req.payload,
+    body: req.body,
+    headers: req.headers,
+    query: req.query,
+    path: req.path,
+    method: req.method,
+    env: req.env,
+  };
+
+  log("🔸🔸🔸 full req dump", JSON.stringify(debugReq, null, 2));
 
   // 1) Grab the raw JSON body from req.payload
   const raw = typeof req.payload === "string" ? req.payload.trim() : "";
