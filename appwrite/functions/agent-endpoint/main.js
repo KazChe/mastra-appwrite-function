@@ -18,16 +18,21 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 export default async ({ req, res, log }) => {
   await waitForMastra();
 
-  // 1️⃣ Read the raw body
-  const raw = typeof req.payload === "string" ? req.payload.trim() : "";
-
-  // 2️⃣ If missing, return a 400
-  if (!raw) {
-    res.status = 400;
-    return res.send('Error: request body required (e.g. { "messages": […] })');
+  // ← HERE: check both req.bodyRaw *and* req.payload
+  let raw = "";
+  if (typeof req.bodyRaw === "string" && req.bodyRaw.trim()) {
+    raw = req.bodyRaw.trim();
+  } else if (typeof req.payload === "string" && req.payload.trim()) {
+    raw = req.payload.trim();
   }
 
-  // 3️⃣ Forward exactly what the client sent
+  // If still empty, error out
+  if (!raw) {
+    res.status = 400;
+    return res.send("Error: request body is required");
+  }
+
+  // Forward exactly what the client sent
   const body = raw;
   log("🔸 wrapper sending body", body);
 
