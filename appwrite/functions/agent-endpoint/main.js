@@ -1,3 +1,4 @@
+// appwrite/functions/agent-endpoint/main.js
 console.log("🟢 wrapper cold-start");
 import "./.output/index.mjs";
 
@@ -17,13 +18,24 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 export default async ({ req, res, log }) => {
   await waitForMastra();
 
-  // 🌟 Exec API payload lives in req.body
-  const incoming = req.body;
-  if (!incoming || !Array.isArray(incoming.messages)) {
-    res.status = 400;
-    return res.send('Error: expected JSON with "messages" array');
+  // 1️⃣ Pull the Exec-API payload string out of req.body.data
+  let incoming = req.body;
+  if (typeof incoming?.data === "string") {
+    try {
+      incoming = JSON.parse(incoming.data);
+    } catch (e) {
+      res.status = 400;
+      return res.send("Error: invalid JSON in data field");
+    }
   }
 
+  // 2️⃣ Validate that we now have a messages array
+  if (!incoming || !Array.isArray(incoming.messages)) {
+    res.status = 400;
+    return res.send('Error: expected JSON { "messages": [ … ] }');
+  }
+
+  // 3️⃣ Forward exactly what the client sent
   const body = JSON.stringify(incoming);
   log("🔸 wrapper sending body", body);
 
@@ -33,6 +45,7 @@ export default async ({ req, res, log }) => {
     body,
   });
 
+  // 4️⃣ Log and relay the response
   const text = await upstream.clone().text();
   log("🔸 upstream raw", text);
 
