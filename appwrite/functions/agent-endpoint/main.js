@@ -18,11 +18,43 @@ const add = (r,k,v)=>typeof r.setHeader==='function'
 export default async ({ req, res, log }) => {
   await wait();
 
-  const body = req.bodyRaw && req.bodyRaw.trim().length
-    ? req.bodyRaw
-    : JSON.stringify({
-        messages:[{ role:'user', content:'Hi 👋 (no body supplied)' }]
-      });
+  // const body = req.bodyRaw && req.bodyRaw.trim().length
+  //   ? req.bodyRaw
+  //   : JSON.stringify({
+  //       messages:[{ role:'user', content:'Hi 👋 (no body supplied)' }]
+  //     });
+
+  const userText = req.bodyRaw && req.bodyRaw.trim().length ? (JSON.parse(req.bodyRaw).message ?? "Hi") : "Hi";
+
+  const body = JSON.stringify({
+    model: "gpt-4o-mini",
+    temperature: 0,
+    messages: [
+      {
+        role: "system",
+        content: `You are a helpful weather assistant and you are able to use the weatherTool to get the weather for a location.`,
+      },
+      { role: "user", content: userText },
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "weatherTool",
+          description: "Get current weather for a location",
+          parameters: {
+            type: "object",
+            properties: {
+              location: { type: "string", description: "City name" },
+            },
+            required: ["location"],
+          },
+        },
+      },
+    ],
+    tool_choice: "auto",
+  });
+
 
   const upstream = await fetch(
     'http://127.0.0.1:4111/api/agents/weatherAgent/generate',
