@@ -1,4 +1,3 @@
-// appwrite/functions/agent-endpoint/main.js
 console.log("🟢 wrapper cold-start");
 import "./.output/index.mjs";
 
@@ -18,22 +17,14 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 export default async ({ req, res, log }) => {
   await waitForMastra();
 
-  // ← HERE: check both req.bodyRaw *and* req.payload
-  let raw = "";
-  if (typeof req.bodyRaw === "string" && req.bodyRaw.trim()) {
-    raw = req.bodyRaw.trim();
-  } else if (typeof req.payload === "string" && req.payload.trim()) {
-    raw = req.payload.trim();
-  }
-
-  // If still empty, error out
-  if (!raw) {
+  // 🌟 Exec API payload lives in req.body
+  const incoming = req.body;
+  if (!incoming || !Array.isArray(incoming.messages)) {
     res.status = 400;
-    return res.send("Error: request body is required");
+    return res.send('Error: expected JSON with "messages" array');
   }
 
-  // Forward exactly what the client sent
-  const body = raw;
+  const body = JSON.stringify(incoming);
   log("🔸 wrapper sending body", body);
 
   const upstream = await fetch("http://127.0.0.1:4111/api/agents/weatherAgent/generate", {
