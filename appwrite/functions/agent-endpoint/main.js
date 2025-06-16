@@ -21,11 +21,8 @@ export default async ({ req, res, log }, context) => {
 
   log("=== DEBUGGING REQUEST ===");
   log("req.variables:", req.variables);
-  log("req.body:", req.body);
   log("req.bodyJson:", req.bodyJson);
   log("req.bodyText:", req.bodyText);
-  log("req.headers:", req.headers);
-  log("req.method:", req.method);
 
   // 1) Grab the raw JSON body from req.payload
   const raw = typeof req.payload === "string" ? req.payload.trim() : "";
