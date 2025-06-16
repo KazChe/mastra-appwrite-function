@@ -21,7 +21,7 @@ export default async ({ req, res, log }, context) => {
 
   // Debug dump of the incoming request
   // Recursively inspect req object up to depth 3
-  const inspectObject = (obj, depth = 0, maxDepth = 10) => {
+  const inspectObject = (obj, depth = 0, maxDepth = 3) => {
     if (depth >= maxDepth) return '[Max Depth Reached]';
     if (!obj || typeof obj !== 'object') return obj;
     
@@ -34,11 +34,11 @@ export default async ({ req, res, log }, context) => {
         result[key] = '[Inspection Error]';
       }
     }
-    log("🔍 Full request inspection:", JSON.stringify(result, null, 2));
+    return result;
   };
   
   const reqInspected = inspectObject(req);
-  log('🔍 Full request inspection:', JSON.stringify(reqInspected, null, 2));
+  log("🔍 Full request inspection:", JSON.stringify(reqInspected, null, 2));
   // const debugReq = {
   //   reqRaw: req,
   //   contextRaw: context,
