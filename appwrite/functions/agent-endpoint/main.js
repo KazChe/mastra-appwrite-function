@@ -22,23 +22,28 @@ export default async ({ req, res, log }) => {
   await wait();
 
   /* caller may send { "message": "..." } or full messages[]; support both */
-  let body;
-  try {
-    if (req.bodyRaw?.trim()) {
-      const parsed = JSON.parse(req.bodyRaw);
-      body = Array.isArray(parsed.messages)
-        ? req.bodyRaw // caller sent full schema
-        : JSON.stringify({ messages: [{ role: "user", content: parsed.message }] });
-    }
-  } catch {
-    /* bad JSON – ignore */
-  }
+  // let body;
+  // try {
+  //   if (req.bodyRaw?.trim()) {
+  //     const parsed = JSON.parse(req.bodyRaw);
+  //     body = Array.isArray(parsed.messages)
+  //       ? req.bodyRaw // caller sent full schema
+  //       : JSON.stringify({ messages: [{ role: "user", content: parsed.message }] });
+  //   }
+  // } catch {
+  //   /* bad JSON – ignore */
+  // }
 
-  if (!body) {
-    body = JSON.stringify({
-      messages: [{ role: "user", content: "Hi! (no message provided)" }],
-    });
-  }
+  // if (!body) {
+  //   body = JSON.stringify({
+  //     messages: [{ role: "user", content: "Hi! (no message provided)" }],
+  //   });
+  // }
+  const body =
+    req.bodyRaw && req.bodyRaw.trim().length
+      ? req.bodyRaw
+      : JSON.stringify({ messages: [{ role: "user", content: "Hi! (no body)" }] });
+
 
   /* call the Weather-Agent — NO tools, NO model, Mastra adds those */
   const upstream = await fetch("http://127.0.0.1:4111/api/agents/weatherAgent/generate", {
