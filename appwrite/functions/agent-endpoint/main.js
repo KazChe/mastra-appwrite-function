@@ -21,30 +21,65 @@ export default async (context) => {
 
   await waitForMastra();
 
-  // Get data from the context directly - this is where Appwrite puts execution data
-  let incoming;
+  // DEBUG: Log everything to see where your data is
+  log("=== FULL DEBUG ===");
+  log("context keys:", Object.keys(context));
+  log("context.req keys:", Object.keys(context.req || {}));
+  log("context.req.body:", context.req?.body);
+  log("context.req.bodyText:", context.req?.bodyText);
+  log("context.req.variables:", context.req?.variables);
+  log("context.payload:", context.payload);
+  log("context.data:", context.data);
 
-  // Try to get data from executions API
-  if (context.req && context.req.body) {
+  // Check for data in different locations
+  let incoming;
+  let dataSource = "fallback";
+
+  // Method 1: context.req.body (what we tried)
+  if (context.req?.body) {
     try {
       const parsed = JSON.parse(context.req.body);
-      // Check if it's wrapped in a "data" field (from your Postman request)
       if (parsed.data) {
         incoming = JSON.parse(parsed.data);
-      } else {
+        dataSource = "context.req.body.data";
+      } else if (parsed.messages) {
         incoming = parsed;
+        dataSource = "context.req.body.messages";
       }
-    } catch {
-      incoming = context.req.body;
+    } catch (e) {
+      log("Failed to parse context.req.body:", e.message);
     }
-  } else {
-    // Fallback, really?
+  }
+
+  // Method 2: Direct in context
+  if (!incoming && context.data) {
+    try {
+      incoming = typeof context.data === "string" ? JSON.parse(context.data) : context.data;
+      dataSource = "context.data";
+    } catch (e) {
+      log("Failed to parse context.data:", e.message);
+    }
+  }
+
+  // Method 3: Check if it's directly in context.req.variables
+  if (!incoming && context.req?.variables) {
+    try {
+      incoming = context.req.variables;
+      dataSource = "context.req.variables";
+    } catch (e) {
+      log("Failed to use context.req.variables:", e.message);
+    }
+  }
+
+  // Method 4: Fallback
+  if (!incoming) {
     incoming = {
       messages: [{ role: "user", content: "What's the weather in San Jose?" }],
     };
+    dataSource = "fallback";
   }
 
-  log("🔸 Using data:", JSON.stringify(incoming));
+  log(`🔸 Using data from ${dataSource}:`, JSON.stringify(incoming));
 
   const body = JSON.stringify(incoming);
 
