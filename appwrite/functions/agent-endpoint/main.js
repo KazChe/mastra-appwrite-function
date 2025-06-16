@@ -19,40 +19,13 @@ const addHeader = (res, k, v) => (typeof res.setHeader === "function" ? res.setH
 export default async ({ req, res, log }, context) => {
   await waitForMastra();
 
-  // Debug dump of the incoming request
-  // Recursively inspect req object up to depth 3
-  const inspectObject = (obj, depth = 0, maxDepth = 3) => {
-    if (depth >= maxDepth) return '[Max Depth Reached]';
-    if (!obj || typeof obj !== 'object') return obj;
-    
-    const result = {};
-    for (const key in obj) {
-      try {
-        const value = obj[key];
-        result[key] = inspectObject(value, depth + 1, maxDepth);
-      } catch (e) {
-        result[key] = '[Inspection Error]';
-      }
-    }
-    return result;
-  };
-  
-  const reqInspected = inspectObject(req);
-  log("🔍 Full request inspection:", JSON.stringify(reqInspected, null, 2));
-  // const debugReq = {
-  //   reqRaw: req,
-  //   contextRaw: context,
-  //   bodyRaw: req.bodyRaw,
-  //   payload: req.payload,
-  //   body: req.body,
-  //   headers: req.headers,
-  //   query: req.query,
-  //   path: req.path,
-  //   method: req.method,
-  //   env: req.env,
-  // };
-
-  // log("🔸🔸🔸 full req dump", JSON.stringify(debugReq, null, 2));
+  log("=== DEBUGGING REQUEST ===");
+  log("req.variables:", req.variables);
+  log("req.body:", req.body);
+  log("req.bodyJson:", req.bodyJson);
+  log("req.bodyText:", req.bodyText);
+  log("req.headers:", req.headers);
+  log("req.method:", req.method);
 
   // 1) Grab the raw JSON body from req.payload
   const raw = typeof req.payload === "string" ? req.payload.trim() : "";
