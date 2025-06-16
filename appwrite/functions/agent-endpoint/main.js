@@ -44,6 +44,7 @@ export default async ({ req, res, log }) => {
       ? req.bodyRaw
       : JSON.stringify({ messages: [{ role: "user", content: "Hi! (no body)" }] });
 
+ log("🔸🔸🔸 wrapper sending body", body);
 
   /* call the Weather-Agent — NO tools, NO model, Mastra adds those */
   const upstream = await fetch("http://127.0.0.1:4111/api/agents/weatherAgent/generate", {
