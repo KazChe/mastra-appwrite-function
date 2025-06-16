@@ -24,17 +24,21 @@ export default async (context) => {
   // Get data from the context directly - this is where Appwrite puts execution data
   let incoming;
 
-  // Check if data was passed via executions API
+  // Try to get data from executions API
   if (context.req && context.req.body) {
     try {
-      incoming = JSON.parse(context.req.body);
+      const parsed = JSON.parse(context.req.body);
+      // Check if it's wrapped in a "data" field (from your Postman request)
+      if (parsed.data) {
+        incoming = JSON.parse(parsed.data);
+      } else {
+        incoming = parsed;
+      }
     } catch {
       incoming = context.req.body;
     }
-  } else if (context.payload) {
-    incoming = context.payload;
   } else {
-    // Default test data if no input
+    // Fallback, really?
     incoming = {
       messages: [{ role: "user", content: "What's the weather in San Jose?" }],
     };
